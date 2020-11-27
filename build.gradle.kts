@@ -6,6 +6,33 @@ plugins {
     kotlin("jvm")
 }
 
+val githubPackagesIssue =
+    """
+    This experiment relies on a pre-release version of the Alchemist simulator.
+    The required dependencies are located on a GitHub Packages repository,
+    which requires authentication even for public repositories.
+    This has been a long standing issue for github, see:
+    https://github.community/t/download-from-github-package-registry-without-authentication/14407
+    Once the issue will be solved, this experiment will work without any configuration user side.
+    
+    This build script preconfigures the environment, but of course it requires the user's authentication.
+    In order to authenticate, first create a GitHub account if you do not have one.
+    Then visit: https://github.com/settings/tokens/new
+    And create a new token with permission at least "read:packages".
+    Save the token, you can see it only once and it's not recoverable (but you can generate another one)
+    Now, you can feed your credentials to this system in two ways:
+    
+    Via environment variables:
+    * set your username in GITHUB_USERNAME
+    * set your token in GITHUB_TOKEN
+    
+    Via Gradle project properties, see: https://docs.gradle.org/current/userguide/build_environment.html#sec:project_properties
+    * set your username in githubUsername
+    * set your token in githubToken
+    
+    Environment variables take precedence.
+    """.trimIndent()
+
 repositories {
     mavenCentral()
     /* 
@@ -14,6 +41,16 @@ repositories {
      * maven("https://dl.bintray.com/alchemist-simulator/Alchemist/")
      * maven("https://dl.bintray.com/protelis/Protelis/")
      */
+    maven("https://maven.pkg.github.com/alchemistsimulator/alchemist") {
+        credentials {
+            username = System.getenv("GITHUB_USERNAME")
+                ?: project.properties["githubUsername"]?.toString()
+                ?: throw IllegalStateException("MISSING USERNAME\n$githubPackagesIssue")
+            password = System.getenv("GITHUB_TOKEN")
+                ?: project.properties["githubToken"]?.toString()
+                ?: throw IllegalStateException("MISSING TOKEN\n$githubPackagesIssue")
+        }
+    }
 }
 /*
  * Only required if you plan to use Protelis, remove otherwise
@@ -27,10 +64,12 @@ sourceSets {
 }
 dependencies {
     implementation("it.unibo.alchemist:alchemist:_")
+    implementation("it.unibo.alchemist:alchemist-implementationbase:_")
     implementation("it.unibo.alchemist:alchemist-incarnation-protelis:_")
     if (!GraphicsEnvironment.isHeadless()) {
         implementation("it.unibo.alchemist:alchemist-swingui:_")
     }
+    implementation("org.jgrapht:jgrapht-core:_")
     implementation(kotlin("stdlib-jdk8"))
 }
 

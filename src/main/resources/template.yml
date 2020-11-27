@@ -1,0 +1,14 @@
+check_stuff:
+  program: ...
+  retentionTime: 2.4
+
+other_stuff:
+  program: "adadsda"
+  retentionTime: 54444
+
+check_to_other:
+  from: check_stuff
+  to: other_stuff
+  program: "true"
+  retentionTime: 4
+

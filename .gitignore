@@ -6,3 +6,4 @@ build
 .idea/
 data_summary_*
 timeprocessed
+gradle.properties
