@@ -15,6 +15,8 @@ jobs:
       JAVA_VERSION: ${{ matrix.jvm_version }}
       OS: ${{ matrix.os }}
       TERM: dumb
+      GITHUB_USERNAME: DanySK
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       # Checkout the repository
       - name: Checkout
