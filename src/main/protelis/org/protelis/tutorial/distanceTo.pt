@@ -1,5 +1,6 @@
 module org:protelis:tutorial:distanceTo
 
+env.put("last-exec", self.getCurrentTime())
 let maxGrad = POSITIVE_INFINITY
 rep (d <- maxGrad) {
 	mux (env.has("source")) {

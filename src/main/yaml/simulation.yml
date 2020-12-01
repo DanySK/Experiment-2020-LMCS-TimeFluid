@@ -18,7 +18,14 @@ gradient: &gradient
         parameters:
           - gradient:
               program: org:protelis:tutorial:distanceTo
-              retentionTime: 2.14
+              retentionTime: 10
+            disabler:
+              program: false
+              reactsToNewInformation: false
+            disabler_to_gradient:
+              from: disabler
+              to: gradient
+              program: "false"
 
 displacements:
   - in:

@@ -9,19 +9,31 @@ import org.protelis.vm.CodePath
 
 typealias Spec = Map<String, Map<String, Any>>
 
-sealed class Descriptor(backingMap: Map<String, Any>) {
+sealed class Descriptor(name: String, backingMap: Map<String, Any>) {
 
-    init {
-        require("program" in backingMap.keys)
-    }
-
-    val program: String by backingMap
+    val program: String
     val retentionTime: Double by backingMap.withDefault { 60.0 }
     val reactsToNewInformation: Boolean by backingMap.withDefault { true }
 
-    class Action internal constructor(backingMap: Map<String, Any>) : Descriptor(backingMap)
+    init {
+        require("program" in backingMap.keys)
+        program = backingMap["program"].toString().let {
+            when {
+                it.contains(':') -> it
+                else -> "module timefluid_gen:$name\n$it"
+            }
+        }
+    }
 
-    class Edge internal constructor(backingMap: Map<String, Any>) : Descriptor(backingMap) {
+    class Action internal constructor(
+        name: String,
+        backingMap: Map<String, Any>
+    ) : Descriptor(name, backingMap)
+
+    class Edge internal constructor(
+        name: String,
+        backingMap: Map<String, Any>
+    ) : Descriptor(name, backingMap) {
         val from: String by backingMap
         val to: String by backingMap
     }
@@ -29,8 +41,8 @@ sealed class Descriptor(backingMap: Map<String, Any>) {
     companion object {
         private val arcRequirements = setOf("from", "to")
 
-        fun fromMap(backingMap: Map<String, Any>): Descriptor =
-            if (backingMap.keys.containsAll(arcRequirements)) Edge(backingMap) else Action(backingMap)
+        fun fromMap(name: String, backingMap: Map<String, Any>): Descriptor =
+            if (backingMap.keys.containsAll(arcRequirements)) Edge(name, backingMap) else Action(name, backingMap)
     }
 }
 
@@ -47,7 +59,7 @@ class TimeFluidProtelisProgram<P : Position<P>>(
     private val dependencyGraph = DirectedAcyclicGraph<ProtelisWrappingAction, Edge<P>>(null, null, false)
 
     init {
-        val (actions, edges) = spec.mapValues { Descriptor.fromMap(it.value) }
+        val (actions, edges) = spec.mapValues { (name, map) -> Descriptor.fromMap(name, map) }
             .entries
             .partition { it.value is Descriptor.Action }
             .toList()
@@ -82,7 +94,18 @@ class TimeFluidProtelisProgram<P : Position<P>>(
         TODO("Not yet implemented")
     }
 
-    private fun evaluate(visited: MutableMap<Any, Boolean>, element: Edge<P>): Boolean = visited.computeIfAbsent(element) {
+    private fun <K : Any, V : Any> MutableMap<K, V>.computeIfNotPresent(key: K, supplier: () -> V): V {
+        val previous = this[key]
+        return if (previous == null) {
+            val new: V = supplier()
+            this[key] = new
+            new
+        } else {
+            previous
+        }
+    }
+
+    private fun evaluate(visited: MutableMap<Any, Boolean>, element: Edge<P>): Boolean = visited.computeIfNotPresent(element) {
         evaluate(visited, element.first) && element.second.let {
             it.execute()
             when (val computed = node.getConcentration(it.asMolecule())) {
@@ -93,11 +116,11 @@ class TimeFluidProtelisProgram<P : Position<P>>(
         }
     }
 
-    private fun evaluate(visited: MutableMap<Any, Boolean>, element: ProtelisWrappingAction): Boolean = visited.computeIfAbsent(element) {
+    private fun evaluate(visited: MutableMap<Any, Boolean>, element: ProtelisWrappingAction): Boolean = visited.computeIfNotPresent(element) {
         val incoming: Set<Edge<P>> = dependencyGraph.incomingEdgesOf(element)
         if (
             incoming.isEmpty()
-            || incoming.map { evaluate(visited, it) }.any()
+            || incoming.map { evaluate(visited, it) }.any { it }
             || element.runsOnMessageChange && element.hasNewMessageStatus
         ) {
             element()
@@ -127,11 +150,11 @@ private class ProtelisWrappingAction(
         val runsOnMessageChange: Boolean
 ) : () -> Unit {
 
-    private var stateAtLastExecution = emptyMap<DeviceUID, Map<CodePath, Any>>()
+    private var stateAtLastExecution: Map<DeviceUID, Map<CodePath, Any>>? = null
 
     val networkManager = program.node.getNetworkManager(program)
 
-    val hasNewMessageStatus = stateAtLastExecution != networkManager.neighborState
+    val hasNewMessageStatus get() = stateAtLastExecution != networkManager.neighborState
 
     override fun invoke() {
         stateAtLastExecution = networkManager.neighborState
