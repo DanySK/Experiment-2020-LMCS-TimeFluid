@@ -12,8 +12,13 @@ gradient: &gradient
     # Loading the code as a module within Alchemist
     # In order to run this example, make sure that src/main/protelis is part of
     # your classpath (the Gradle script is already properly configured).
-    program: org:protelis:tutorial:distanceTo
-  - program: send
+    type: Event
+    actions:
+      - type: TimeFluidProtelisProgram
+        parameters:
+          - gradient:
+              program: org:protelis:tutorial:distanceTo
+              retentionTime: 2.14
 
 displacements:
   - in:

@@ -1,7 +1,7 @@
 [
   {
     "type": "class it.unibo.alchemist.boundary.gui.effects.DrawShape",
-    "curIncarnation": "biochemistry",
+    "curIncarnation": "protelis",
     "mode": "FILL_ELLIPSE",
     "red": {
       "max": 255,
@@ -31,10 +31,10 @@
     "size": {
       "max": 100,
       "min": 0,
-      "val": 5
+      "val": 17
     },
-    "molFilter": false,
-    "molString": "",
+    "molFilter": true,
+    "molString": "source",
     "molPropertyFilter": false,
     "property": "",
     "writingPropertyValue": false,
@@ -72,12 +72,12 @@
     "blue": {
       "max": 255,
       "min": 0,
-      "val": 255
+      "val": 0
     },
     "green": {
       "max": 255,
       "min": 0,
-      "val": 0
+      "val": 255
     },
     "alpha": {
       "max": 255,
@@ -100,7 +100,7 @@
     "property": "",
     "writingPropertyValue": false,
     "c": "HUE",
-    "reverse": true,
+    "reverse": false,
     "propoom": {
       "max": 10,
       "min": -10,
@@ -109,7 +109,7 @@
     "minprop": {
       "max": 10,
       "min": -10,
-      "val": -1
+      "val": 0
     },
     "maxprop": {
       "max": 10,
@@ -117,7 +117,7 @@
       "val": 2
     },
     "colorCache": {
-      "value": -16776961,
+      "value": -16711936,
       "falpha": 0.0
     }
   }
