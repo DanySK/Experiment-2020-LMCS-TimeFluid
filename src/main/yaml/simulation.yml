@@ -18,14 +18,17 @@ gradient: &gradient
         parameters:
           - gradient:
               program: org:protelis:tutorial:distanceTo
-              retentionTime: 10
-            disabler:
-              program: false
-              reactsToNewInformation: false
-            disabler_to_gradient:
-              from: disabler
+#              retentionTime: 10
+            neighbor_sensor:
+              program: |
+                let neighs = foldUnion([nbr(self)])
+                rep(x <- [[], []]) { [x.get(1), neighs] }.get(0) != neighs
+#              reactsToNewInformation: false
+#              retentionTime: 10
+            neighbor_sensor_to_gradient:
+              from: neighbor_sensor
               to: gradient
-              program: "false"
+              program: env.get("neighbor_sensor")
 
 displacements:
   - in:

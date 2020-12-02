@@ -12,7 +12,7 @@ typealias Spec = Map<String, Map<String, Any>>
 sealed class Descriptor(name: String, backingMap: Map<String, Any>) {
 
     val program: String
-    val retentionTime: Double by backingMap.withDefault { 60.0 }
+    val retentionTime: Double by backingMap.withDefault { Double.NaN }
     val reactsToNewInformation: Boolean by backingMap.withDefault { true }
 
     init {
@@ -20,7 +20,7 @@ sealed class Descriptor(name: String, backingMap: Map<String, Any>) {
         program = backingMap["program"].toString().let {
             when {
                 it.contains(':') -> it
-                else -> "module timefluid_gen:$name\n$it"
+                else -> "module $name\n$it"
             }
         }
     }
@@ -144,21 +144,27 @@ class TimeFluidProtelisProgram<P : Position<P>>(
     override fun getContext(): Context = Context.NEIGHBORHOOD
 }
 
+private typealias Message = Map<CodePath, Any>
+private typealias NetworkMessages = Map<DeviceUID, Message>
+
 private class ProtelisWrappingAction(
-        val program: RunProtelisProgram<*>,
-        val send: SendToNeighbor,
-        val runsOnMessageChange: Boolean
+    val program: RunProtelisProgram<*>,
+    val send: SendToNeighbor,
+    val runsOnMessageChange: Boolean
 ) : () -> Unit {
 
-    private var stateAtLastExecution: Map<DeviceUID, Map<CodePath, Any>>? = null
+    private var stateAtLastExecution: Pair<Message, NetworkMessages>? = null
+    private val currentState get() = program.executionContext.storedState to networkManager.neighborState
 
     val networkManager = program.node.getNetworkManager(program)
 
-    val hasNewMessageStatus get() = stateAtLastExecution != networkManager.neighborState
+    val hasNewMessageStatus get() = stateAtLastExecution != currentState
 
     override fun invoke() {
-        stateAtLastExecution = networkManager.neighborState
+        stateAtLastExecution = currentState
         program.execute()
         send.execute()
     }
+
+    override fun toString(): String = program.toString()
 }
