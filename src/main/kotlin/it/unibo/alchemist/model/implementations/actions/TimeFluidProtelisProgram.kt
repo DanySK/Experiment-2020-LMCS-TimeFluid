@@ -14,6 +14,7 @@ sealed class Descriptor(name: String, backingMap: Map<String, Any>) {
     val program: String
     val retentionTime: Double by backingMap.withDefault { Double.NaN }
     val reactsToNewInformation: Boolean by backingMap.withDefault { true }
+    val reactsToSelfState: Boolean by backingMap.withDefault { true }
 
     init {
         require("program" in backingMap.keys)
@@ -71,7 +72,7 @@ class TimeFluidProtelisProgram<P : Position<P>>(
         val vertices = actions.mapValues { (_, action) ->
             val program = RunProtelisProgram(environment, node, reaction, randomGenerator, action.program, action.retentionTime)
             val sendToNeighbor = SendToNeighbor(node, reaction, program)
-            val wrapper = ProtelisWrappingAction(program, sendToNeighbor, action.reactsToNewInformation)
+            val wrapper = ProtelisWrappingAction(program, sendToNeighbor, action.reactsToNewInformation, action.reactsToSelfState)
             dependencyGraph.addVertex(wrapper)
             wrapper
         }
@@ -122,6 +123,7 @@ class TimeFluidProtelisProgram<P : Position<P>>(
             incoming.isEmpty()
             || incoming.map { evaluate(visited, it) }.any { it }
             || element.runsOnMessageChange && element.hasNewMessageStatus
+            || element.runsOnStateChange && element.hasNewMessageStatus
         ) {
             element()
             true
@@ -150,18 +152,23 @@ private typealias NetworkMessages = Map<DeviceUID, Message>
 private class ProtelisWrappingAction(
     val program: RunProtelisProgram<*>,
     val send: SendToNeighbor,
-    val runsOnMessageChange: Boolean
+    val runsOnMessageChange: Boolean,
+    val runsOnStateChange: Boolean,
 ) : () -> Unit {
 
-    private var stateAtLastExecution: Pair<Message, NetworkMessages>? = null
-    private val currentState get() = program.executionContext.storedState to networkManager.neighborState
+    private var internalStateAtLastExecution: Message? = null
+    private var networkStateAtLastExecution: NetworkMessages? = null
+    private val currentInternalState get() = program.executionContext.storedState
+    private val currentNetworkState get() = networkManager.neighborState
 
     val networkManager = program.node.getNetworkManager(program)
 
-    val hasNewMessageStatus get() = stateAtLastExecution != currentState
+    val hasNewMessageStatus get() = networkStateAtLastExecution != currentNetworkState
+    val hasNewSelfState get() = internalStateAtLastExecution != currentInternalState
 
     override fun invoke() {
-        stateAtLastExecution = currentState
+        internalStateAtLastExecution = currentInternalState
+        networkStateAtLastExecution = currentNetworkState
         program.execute()
         send.execute()
     }

@@ -49,7 +49,7 @@ public class RunProtelisProgram<P extends Position<P>> implements Action<Object>
     private final Reaction<Object> reaction;
     private final double retentionTime;
     private transient ProtelisVM vm;
-    private transient AlchemistExecutionContext executionContext;
+    private transient AlchemistExecutionContext<P> executionContext;
 
     private RunProtelisProgram(
             final Environment<Object, P> env,

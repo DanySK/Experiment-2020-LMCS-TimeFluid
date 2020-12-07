@@ -13,22 +13,37 @@ gradient: &gradient
     # In order to run this example, make sure that src/main/protelis is part of
     # your classpath (the Gradle script is already properly configured).
     type: Event
+    conditions:
+      - type: OnAnyLocalEvent
     actions:
       - type: TimeFluidProtelisProgram
         parameters:
           - gradient:
               program: org:protelis:tutorial:distanceTo
+              reactsToNewInformation: true
+              reactsToSelfState: false
 #              retentionTime: 10
             neighbor_sensor:
               program: |
-                let neighs = foldUnion([nbr(self)])
+                let neighs = foldUnion([nbr(self.getDeviceUID())])
                 rep(x <- [[], []]) { [x.get(1), neighs] }.get(0) != neighs
-#              reactsToNewInformation: false
+              reactsToNewInformation: false
+              reactsToSelfState: false
+            position_sensor:
+              program: |
+                let neighs = foldUnion([nbr(self.getDevicePosition())])
+                rep(x <- [[], []]) { [x.get(1), neighs] }.get(0) != neighs
+              reactsToNewInformation: false
+              reactsToSelfState: false
 #              retentionTime: 10
             neighbor_sensor_to_gradient:
               from: neighbor_sensor
               to: gradient
               program: env.get("neighbor_sensor")
+            position_sensor_to_gradient:
+              from: position_sensor
+              to: gradient
+              program: env.get("position_sensor")
 
 displacements:
   - in:
