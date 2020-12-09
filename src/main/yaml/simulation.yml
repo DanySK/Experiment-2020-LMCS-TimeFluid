@@ -2,12 +2,40 @@ incarnation: protelis
 
 network-model:
   type: ConnectWithinDistance
-  parameters: [0.5]
+  parameters: [0.4]
+
+variables:
+  seed: &seed
+    min: 0
+    max: 99
+    step: 1
+    default: 0
+  speed: &speed
+    type: ArbitraryVariable
+    parameters: [10, [0, 1, 2, 5, 10]]
+  network_mean_latency: &network_mean_latency
+    type: ArbitraryVariable
+    parameters: [0.01, [0.001, 0.01, 0.1, 1]]
+  tolerance: &tolerance
+    type: ArbitraryVariable
+    parameters: [0.01, [0, 0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28]]
+
+seed:
+  scenario: *seed
+  simulation: *seed
 
 gradient: &gradient
+  - time-distribution: 1
+    program: |
+      module classicGradient
+      env.put("classic_rounds", optionally(env.get("classic_rounds")).orElse(0) + 1)
+      share (d <- POSITIVE_INFINITY) {
+      	mux (env.has("source")) { 0 } else { foldMin(POSITIVE_INFINITY, d + self.nbrRange()) }
+      }
+  - program: send
   - time-distribution:
-      type: ExponentialTime
-      parameters: [1]
+      type: AnyRealDistribution
+      parameters: [WeibullDistribution, 4, *network_mean_latency]
     # Writing Protelis programs within a YAML file is a bad experience
     # (some characters need escaping, no syntax highlight, no code suggestions...)
     # We recommend using the Protelis Eclipse plugin to write your code, then
@@ -50,7 +78,6 @@ gradient: &gradient
 #              retentionTime: 10
             self_sensor:
               program: |
-                env.put("LASTEVAL", self.getCurrentTime())
                 let gradient = optionally(env.get("org:protelis:tutorial:distanceTo")).orElse(NaN)
                 let surrounding = foldUnion([nbr(gradient)])
                 env.put("surrounding", surrounding)
