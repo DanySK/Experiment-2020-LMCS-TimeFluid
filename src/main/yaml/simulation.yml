@@ -5,16 +5,19 @@ network-model:
   parameters: [0.5]
 
 gradient: &gradient
-  - time-distribution: 1
+  - time-distribution:
+      type: ExponentialTime
+      parameters: [1]
     # Writing Protelis programs within a YAML file is a bad experience
     # (some characters need escaping, no syntax highlight, no code suggestions...)
     # We recommend using the Protelis Eclipse plugin to write your code, then
     # Loading the code as a module within Alchemist
     # In order to run this example, make sure that src/main/protelis is part of
     # your classpath (the Gradle script is already properly configured).
-    type: Event
+    type: ChemicalReaction
     conditions:
-      - type: OnAnyLocalEvent
+      - type: OnAnyNeighborhoodChange
+        parameters: [1]
     actions:
       - type: TimeFluidProtelisProgram
         parameters:
@@ -47,8 +50,10 @@ gradient: &gradient
 #              retentionTime: 10
             self_sensor:
               program: |
+                env.put("LASTEVAL", self.getCurrentTime())
                 let gradient = optionally(env.get("org:protelis:tutorial:distanceTo")).orElse(NaN)
                 let surrounding = foldUnion([nbr(gradient)])
+                env.put("surrounding", surrounding)
                 let previous = rep(x <- [[], []]) { [x.get(1), surrounding] }.get(0)
                 if (surrounding.size() != previous.size()) {
                   true
@@ -86,6 +91,6 @@ displacements:
         molecule: source
         concentration: true
       - molecule: distanceThreshold
-        concentration: 0.1
+        concentration: 0.01
     programs:
       - *gradient

@@ -60,6 +60,7 @@ class TimeFluidProtelisProgram<P : Position<P>>(
     private val dependencyGraph = DirectedAcyclicGraph<ProtelisWrappingAction, Edge<P>>(null, null, false)
 
     init {
+        declareDependencyTo(Dependency.EVERY_MOLECULE)
         val (actions, edges) = spec.mapValues { (name, map) -> Descriptor.fromMap(name, map) }
             .entries
             .partition { it.value is Descriptor.Action }
@@ -123,7 +124,7 @@ class TimeFluidProtelisProgram<P : Position<P>>(
             incoming.isEmpty()
             || incoming.map { evaluate(visited, it) }.any { it }
             || element.runsOnMessageChange && element.hasNewMessageStatus
-            || element.runsOnStateChange && element.hasNewMessageStatus
+            || element.runsOnStateChange && element.hasNewSelfState
         ) {
             element()
             true
@@ -144,6 +145,7 @@ class TimeFluidProtelisProgram<P : Position<P>>(
     }
 
     override fun getContext(): Context = Context.NEIGHBORHOOD
+
 }
 
 private typealias Message = Map<CodePath, Any>
