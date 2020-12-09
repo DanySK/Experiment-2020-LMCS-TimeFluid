@@ -70,6 +70,7 @@ dependencies {
         implementation("it.unibo.alchemist:alchemist-swingui:_")
     }
     implementation("org.jgrapht:jgrapht-core:_")
+    implementation("org.apache.commons:commons-lang3:_")
     implementation(kotlin("stdlib-jdk8"))
 }
 

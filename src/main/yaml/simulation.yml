@@ -20,7 +20,7 @@ gradient: &gradient
         parameters:
           - gradient:
               program: org:protelis:tutorial:distanceTo
-              reactsToNewInformation: true
+              reactsToNewInformation: false
               reactsToSelfState: false
 #              retentionTime: 10
             neighbor_sensor:
@@ -32,10 +32,36 @@ gradient: &gradient
             position_sensor:
               program: |
                 let neighs = foldUnion([nbr(self.getDevicePosition())])
-                rep(x <- [[], []]) { [x.get(1), neighs] }.get(0) != neighs
+                let previous = rep(x <- [[], []]) { [x.get(1), neighs] }.get(0)
+                if (neighs.size() != previous.size()) {
+                  true
+                } else {
+                  let differences = neighs.zip(previous)
+                    .map { it.get(0).distanceTo(it.get(1)) }
+                  env.put("differences", differences)
+                  let threshold = optionally(env.get("distanceThreshold")).orElse(0)
+                  !differences.filter { it > threshold }.isEmpty()
+                }
               reactsToNewInformation: false
               reactsToSelfState: false
 #              retentionTime: 10
+            self_sensor:
+              program: |
+                let gradient = optionally(env.get("org:protelis:tutorial:distanceTo")).orElse(NaN)
+                let surrounding = foldUnion([nbr(gradient)])
+                let previous = rep(x <- [[], []]) { [x.get(1), surrounding] }.get(0)
+                if (surrounding.size() != previous.size()) {
+                  true
+                } else {
+                  let differences = surrounding.zip(previous)
+                    .map { abs(it.get(0) - it.get(1)) }
+                  env.put("differences-grad", differences)
+                  let threshold = optionally(env.get("distanceThreshold")).orElse(0)
+                  !differences.filter { it > threshold }.isEmpty()
+                }
+              reactsToNewInformation: false
+              reactsToSelfState: false
+            #              retentionTime: 10
             neighbor_sensor_to_gradient:
               from: neighbor_sensor
               to: gradient
@@ -44,6 +70,10 @@ gradient: &gradient
               from: position_sensor
               to: gradient
               program: env.get("position_sensor")
+            self_arc:
+              from: self_sensor
+              to: gradient
+              program: env.get("self_sensor")
 
 displacements:
   - in:
@@ -55,5 +85,7 @@ displacements:
           parameters: [-6, -6, 2, 2]
         molecule: source
         concentration: true
+      - molecule: distanceThreshold
+        concentration: 0.1
     programs:
       - *gradient

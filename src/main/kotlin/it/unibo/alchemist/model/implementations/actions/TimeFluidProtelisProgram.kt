@@ -20,7 +20,7 @@ sealed class Descriptor(name: String, backingMap: Map<String, Any>) {
         require("program" in backingMap.keys)
         program = backingMap["program"].toString().let {
             when {
-                it.contains(':') -> it
+                it.matches("\\w+(:\\w+)*".toRegex()) -> it
                 else -> "module $name\n$it"
             }
         }
