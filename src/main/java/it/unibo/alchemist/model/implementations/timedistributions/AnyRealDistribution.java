@@ -109,9 +109,9 @@ public class AnyRealDistribution<T> extends AbstractDistribution<T> {
         }
         if (additionalParameter == 0) {
             // The execution is blocked
-            setTau(Time.INFINITY);
+            setNextOccurrence(Time.INFINITY);
         } else {
-            setTau(next);
+            setNextOccurrence(next);
         }
     }
 

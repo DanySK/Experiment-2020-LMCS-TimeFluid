@@ -23,6 +23,6 @@ let result = share (d <- maxGrad) {
 let oracle = distanceToSource()
 env.put("oracle", oracle)
 let error = if (oracle.isInfinite() && result.isInfinite()) { 0 } else { abs(oracle - result) }
-env.put("timefluid-error", error)
-env.put("timefluid-coverage", isFinite(error))
+env.put("error", error)
+env.put("coverage", isFinite(error))
 result

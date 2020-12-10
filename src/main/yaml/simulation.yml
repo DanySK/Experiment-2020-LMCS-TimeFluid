@@ -7,25 +7,53 @@ network-model:
 variables:
   seed: &seed
     min: 0
-    max: 99
+    max: 9
     step: 1
     default: 0
   speed: &speed
     type: ArbitraryVariable
-    parameters: [10, [0, 1, 2, 5, 10]]
+    parameters: [0.1, [0.1, 0.1, 1]]
+  latencies:
+    formula: "[0.001, 0.01, 0.1, 1]"
+  tolerances:
+    formula: "[0, 0.01, 0.03, 0.1, 0.3, 1, 3]"
+  controlParameters: &control
+    formula: GroovyCollections.combinations(latencies, tolerances) + [[1e300, 1e300]]
+  algorithm:
+    type: ArbitraryVariable
+    parameters: [[0.1, 0.01], *control]
+  classic_frequency: &classic_frequency
+    formula: if (network_mean_latency > 10 && tolerance > 10) 1 else 0
   network_mean_latency: &network_mean_latency
-    type: ArbitraryVariable
-    parameters: [0.01, [0.001, 0.01, 0.1, 1]]
+    formula: algorithm[0]
   tolerance: &tolerance
-    type: ArbitraryVariable
-    parameters: [0.01, [0, 0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28]]
+    formula: algorithm[1]
+#    type: ArbitraryVariable
+#    parameters: [0.01, [0, 0.01, 0.03, 0.1, 0.3, 1, 3]]
 
 seed:
   scenario: *seed
   simulation: *seed
 
-gradient: &gradient
+_target_computation: &target_computation |
+  module movetarget
+  let start = [-5, 5]
+  let end = [5, 5]
+  let current = self.getCoordinates()
+  let forward = rep(x <- true) { x && current != end || !x && current == start }
+  if (forward) { end } else { start }
+
+move: &move
   - time-distribution: 1
+    type: Event
+    actions:
+      - type: RunProtelisProgram
+        parameters: [*target_computation]
+      - type: MoveToTarget
+        parameters: ["movetarget", *speed]
+
+gradient: &gradient
+  - time-distribution: *classic_frequency
     program: |
       module classicGradient
       import DistanceOracle.*
@@ -36,18 +64,17 @@ gradient: &gradient
       let oracle = distanceToSource()
       env.put("oracle", oracle)
       let error = if (oracle.isInfinite() && result.isInfinite()) { 0 } else { abs(oracle - result) }
-      env.put("classic-error", error)
-      env.put("classic-coverage", isFinite(error))
+      env.put("error", error)
+      env.put("coverage", isFinite(error))
       result
   - program: send
-#  - time-distribution: 10
 #    program: |
 #      module oracle
 #      import DistanceOracle.*
 #      distanceToSource()
   - time-distribution:
       type: AnyRealDistribution
-      parameters: [WeibullDistribution, 4, *network_mean_latency]
+      parameters: [WeibullDistribution, 1, *network_mean_latency]
     # Writing Protelis programs within a YAML file is a bad experience
     # (some characters need escaping, no syntax highlight, no code suggestions...)
     # We recommend using the Protelis Eclipse plugin to write your code, then
@@ -121,6 +148,17 @@ gradient: &gradient
 
 displacements:
   - in:
+      type: Point
+      parameters: [-5, 5]
+    contents:
+      - molecule: source
+        concentration: true
+      - molecule: distanceThreshold
+        concentration: *tolerance
+    programs:
+      - *gradient
+      - *move
+  - in:
       type: Grid
       parameters: [-5, -5, 5, 5, 0.25, 0.25, 0.1, 0.1]
     contents:
@@ -133,3 +171,16 @@ displacements:
         concentration: *tolerance
     programs:
       - *gradient
+
+export:
+  - time
+  - molecule: error
+    value-filter: onlyfinite
+    aggregators: [mean]
+  - molecule: coverage
+    value-filter: onlyfinite
+    aggregators: [mean]
+
+terminate:
+  - type: AfterTime
+    parameters: [300]

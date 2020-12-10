@@ -120,6 +120,7 @@ File(rootProject.rootDir.path + "/src/main/yaml").listFiles()
             main = "it.unibo.alchemist.Alchemist"
             classpath = sourceSets["main"].runtimeClasspath
             args("-y", it.absolutePath)
+            args("-e", "sample-data")
             if (System.getenv("CI") == "true") {
                 args("-hl", "-t", "2")
             } else {
@@ -140,7 +141,7 @@ File(rootProject.rootDir.path + "/src/main/yaml").listFiles()
                 "-b",
                 "-var", "seed", "speed", "meanNeighbors", "nodeCount",
                 "-p", threadCount,
-                "-i", 1
+                "-i", "0.2"
             )
         }
         runAllBatch.dependsOn(batch)
