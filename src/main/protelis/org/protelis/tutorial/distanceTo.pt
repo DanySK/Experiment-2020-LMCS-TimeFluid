@@ -2,7 +2,7 @@ module org:protelis:tutorial:distanceTo
 import DistanceOracle.*
 
 env.put("last-exec", self.getCurrentTime())
-env.put("runs", optionally(env.get("runs")).orElse(0) + 1)
+env.put("rounds", optionally(env.get("rounds")).orElse(0) + 1)
 let maxGrad = POSITIVE_INFINITY
 /*
 rep (d <- maxGrad) {

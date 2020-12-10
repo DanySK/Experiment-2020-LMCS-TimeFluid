@@ -12,13 +12,13 @@ variables:
     default: 0
   speed: &speed
     type: ArbitraryVariable
-    parameters: [0.1, [0.1, 0.1, 1]]
+    parameters: [0.1, [0, 0.1, 0.3, 1, 3]]
   latencies:
-    formula: "[0.001, 0.01, 0.1, 1]"
+    formula: "[0.01, 0.03, 0.1, 0.3 1]"
   tolerances:
     formula: "[0, 0.01, 0.03, 0.1, 0.3, 1, 3]"
   controlParameters: &control
-    formula: GroovyCollections.combinations(latencies, tolerances) + [[1e300, 1e300]]
+    formula: GroovyCollections.combinations(latencies, tolerances) + [[Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY]]
   algorithm:
     type: ArbitraryVariable
     parameters: [[0.1, 0.01], *control]
@@ -44,7 +44,7 @@ _target_computation: &target_computation |
   if (forward) { end } else { start }
 
 move: &move
-  - time-distribution: 1
+  - time-distribution: 10
     type: Event
     actions:
       - type: RunProtelisProgram
@@ -57,7 +57,7 @@ gradient: &gradient
     program: |
       module classicGradient
       import DistanceOracle.*
-      env.put("classic_rounds", optionally(env.get("classic_rounds")).orElse(0) + 1)
+      env.put("rounds", optionally(env.get("rounds")).orElse(0) + 1)
       let result = share (d <- POSITIVE_INFINITY) {
       	mux (env.has("source")) { 0 } else { foldMin(POSITIVE_INFINITY, d + self.nbrRange()) }
       }
@@ -180,6 +180,9 @@ export:
   - molecule: coverage
     value-filter: onlyfinite
     aggregators: [mean]
+  - molecule: rounds
+    value-filter: onlyfinite
+    aggregators: [sum, mean, max, min, StandardDeviation, GeometricMean]
 
 terminate:
   - type: AfterTime
