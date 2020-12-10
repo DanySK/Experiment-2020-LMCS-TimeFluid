@@ -92,7 +92,7 @@ if (System.getProperty("os.name").toLowerCase().contains("linux")) {
     14 * 1024L
 }
 val taskSizeFromProject: Int? by project
-val taskSize = taskSizeFromProject ?: 512
+val taskSize = taskSizeFromProject ?: 512 * 3
 val threadCount = maxOf(1, minOf(Runtime.getRuntime().availableProcessors(), heap.toInt() / taskSize ))
 
 val alchemistGroup = "Run Alchemist"
@@ -139,7 +139,7 @@ File(rootProject.rootDir.path + "/src/main/yaml").listFiles()
             args(
                 "-e", "data/${it.nameWithoutExtension}",
                 "-b",
-                "-var", "seed", "speed", "meanNeighbors", "nodeCount",
+                "-var", "seed", "speed", "algorithm",
                 "-p", threadCount,
                 "-i", "0.2"
             )
