@@ -120,7 +120,6 @@ File(rootProject.rootDir.path + "/src/main/yaml").listFiles()
             main = "it.unibo.alchemist.Alchemist"
             classpath = sourceSets["main"].runtimeClasspath
             args("-y", it.absolutePath)
-            args("-e", "sample-data")
             if (System.getenv("CI") == "true") {
                 args("-hl", "-t", "2")
             } else {
@@ -129,12 +128,14 @@ File(rootProject.rootDir.path + "/src/main/yaml").listFiles()
             this.additionalConfiguration()
         }
         val capitalizedName = it.nameWithoutExtension.capitalize()
-        val graphic by basetask("run${capitalizedName}Graphic")
+        val graphic by basetask("run${capitalizedName}Graphic") {
+            args("-e", "sample-data")
+        }
         runAllGraphic.dependsOn(graphic)
         val batch by basetask("run${capitalizedName}Batch") {
             description = "Launches batch experiments for $capitalizedName"
             jvmArgs("-XX:+AggressiveHeap")
-            maxHeapSize = "${minOf(heap.toInt(), Runtime.getRuntime().availableProcessors() * taskSize)}m"
+            maxHeapSize = "${heap.toInt()}m"
             File("data").mkdirs()
             args(
                 "-e", "data/${it.nameWithoutExtension}",
