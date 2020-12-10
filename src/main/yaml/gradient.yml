@@ -14,14 +14,14 @@ variables:
     type: ArbitraryVariable
     parameters: [0.1, [0, 0.1, 0.3, 1, 3]]
   latencies:
-    formula: "[0.01, 0.03, 0.1, 0.3 1]"
+    formula: "[0.01, 0.03, 0.1, 0.3, 1]"
   tolerances:
     formula: "[0, 0.01, 0.03, 0.1, 0.3, 1, 3]"
   controlParameters: &control
-    formula: GroovyCollections.combinations(latencies, tolerances) + [[Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY]]
+    formula: "[[Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY]] + GroovyCollections.combinations(latencies, tolerances)"
   algorithm:
     type: ArbitraryVariable
-    parameters: [[0.1, 0.01], *control]
+    parameters: [[0.01, 0.01], *control]
   classic_frequency: &classic_frequency
     formula: if (network_mean_latency > 10 && tolerance > 10) 1 else 0
   network_mean_latency: &network_mean_latency
