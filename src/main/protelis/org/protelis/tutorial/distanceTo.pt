@@ -1,4 +1,5 @@
 module org:protelis:tutorial:distanceTo
+import DistanceOracle.*
 
 env.put("last-exec", self.getCurrentTime())
 env.put("runs", optionally(env.get("runs")).orElse(0) + 1)
@@ -12,10 +13,16 @@ rep (d <- maxGrad) {
 	}
 }
 */
-share (d <- maxGrad) {
+let result = share (d <- maxGrad) {
 	mux (env.has("source")) {
 		0
 	} else {
 		foldMin(maxGrad, d + self.nbrRange())
 	}
 }
+let oracle = distanceToSource()
+env.put("oracle", oracle)
+let error = if (oracle.isInfinite() && result.isInfinite()) { 0 } else { abs(oracle - result) }
+env.put("timefluid-error", error)
+env.put("timefluid-coverage", isFinite(error))
+result

@@ -28,11 +28,23 @@ gradient: &gradient
   - time-distribution: 1
     program: |
       module classicGradient
+      import DistanceOracle.*
       env.put("classic_rounds", optionally(env.get("classic_rounds")).orElse(0) + 1)
-      share (d <- POSITIVE_INFINITY) {
+      let result = share (d <- POSITIVE_INFINITY) {
       	mux (env.has("source")) { 0 } else { foldMin(POSITIVE_INFINITY, d + self.nbrRange()) }
       }
+      let oracle = distanceToSource()
+      env.put("oracle", oracle)
+      let error = if (oracle.isInfinite() && result.isInfinite()) { 0 } else { abs(oracle - result) }
+      env.put("classic-error", error)
+      env.put("classic-coverage", isFinite(error))
+      result
   - program: send
+#  - time-distribution: 10
+#    program: |
+#      module oracle
+#      import DistanceOracle.*
+#      distanceToSource()
   - time-distribution:
       type: AnyRealDistribution
       parameters: [WeibullDistribution, 4, *network_mean_latency]
@@ -118,6 +130,6 @@ displacements:
         molecule: source
         concentration: true
       - molecule: distanceThreshold
-        concentration: 0.01
+        concentration: *tolerance
     programs:
       - *gradient

@@ -10,7 +10,7 @@ class OnAnyNeighborhoodChange<P : Position<P>>(
     stepsRequiredForStability: Int
 ) : AnythingChangedRecently<Any>(node, stepsRequiredForStability) {
 
-    override fun getContext(): Context = Context.NEIGHBORHOOD
+    override fun getContext(): Context = Context.LOCAL
 
     override val currentState: Any get() = node.state to environment.getNeighborhood(node).map { it.state }
 
@@ -22,7 +22,7 @@ class OnAnyNeighborhoodChange<P : Position<P>>(
         contents,
         when (this) {
             is ProtelisNode<*> -> networkManagers.map { (protelisProgram, networkmanager) ->
-                protelisProgram.getExecutionContext().storedState to networkmanager.neighborState
+                protelisProgram.executionContext.storedState to networkmanager.neighborState
             }
             else -> emptyList<Any>()
         }
