@@ -2,7 +2,7 @@ incarnation: protelis
 
 network-model:
   type: ConnectWithinDistance
-  parameters: [0.4]
+  parameters: [1]
 
 variables:
   seed: &seed
@@ -160,7 +160,7 @@ displacements:
       - *move
   - in:
       type: Grid
-      parameters: [-5, -5, 5, 5, 0.25, 0.25, 0.1, 0.1]
+      parameters: [-5.5, -5.5, 5, 5, 0.5, 0.5, 0.1, 0.1]
     contents:
       - in:
           type: Rectangle
