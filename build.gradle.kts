@@ -77,20 +77,21 @@ dependencies {
 // Heap size estimation for batches
 val maxHeap: Long? by project
 val heap: Long = maxHeap ?:
-if (System.getProperty("os.name").toLowerCase().contains("linux")) {
-    ByteArrayOutputStream().use { output ->
-        exec {
-            executable = "bash"
-            args = listOf("-c", "cat /proc/meminfo | grep MemAvailable | grep -o '[0-9]*'")
-            standardOutput = output
-        }
-        output.toString().trim().toLong() / 1024
+    if (System.getProperty("os.name").toLowerCase().contains("linux")) {
+        ByteArrayOutputStream()
+            .use { output ->
+                exec {
+                    executable = "bash"
+                    args = listOf("-c", "cat /proc/meminfo | grep MemAvailable | grep -o '[0-9]*'")
+                    standardOutput = output
+                }
+                output.toString().trim().toLong() / 1024
+            }
+            .also { println("Detected ${it}MB RAM available.") }  * 9 / 10
+    } else {
+        // Guess 16GB RAM of which 2 used by the OS
+        14 * 1024L
     }
-        .also { println("Detected ${it}MB RAM available.") }  * 9 / 10
-} else {
-    // Guess 16GB RAM of which 2 used by the OS
-    14 * 1024L
-}
 val taskSizeFromProject: Int? by project
 val taskSize = taskSizeFromProject ?: 512 * 3
 val threadCount = maxOf(1, minOf(Runtime.getRuntime().availableProcessors(), heap.toInt() / taskSize ))
@@ -137,7 +138,7 @@ File(rootProject.rootDir.path + "/src/main/yaml").listFiles()
             jvmArgs("-XX:+UseZGC")
 //            jvmArgs("-XX:+UseTransparentHugePages") // Only works on Linux
 //            jvmArgs("-XX:+AggressiveHeap")
-            maxHeapSize = "${heap.toInt()}m"
+            maxHeapSize = "${(heap / 10 * 9).toInt()}m"
             File("data").mkdirs()
             args(
                 "-e", "data/${it.nameWithoutExtension}",
