@@ -134,7 +134,9 @@ File(rootProject.rootDir.path + "/src/main/yaml").listFiles()
         runAllGraphic.dependsOn(graphic)
         val batch by basetask("run${capitalizedName}Batch") {
             description = "Launches batch experiments for $capitalizedName"
-            jvmArgs("-XX:+AggressiveHeap")
+            jvmArgs("-XX:+UseZGC")
+//            jvmArgs("-XX:+UseTransparentHugePages") // Only works on Linux
+//            jvmArgs("-XX:+AggressiveHeap")
             maxHeapSize = "${heap.toInt()}m"
             File("data").mkdirs()
             args(
