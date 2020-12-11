@@ -18,7 +18,7 @@ fun distanceToSource(context: AlchemistExecutionContext<*>): Double {
 //    val closest = Comparator<Node<Any>> { a, b -> a.shortestDistanceSoFar().compareTo(b.shortestDistanceSoFar()) }
 //    val toVisit = sortedSetOf<Node<Any>>(closest, node)
     val toVisit = sortedSetOf<NodeDistance>(
-        Comparator { a, b -> a.second.compareTo(b.second) },
+        Comparator { a, b -> a.second.compareTo(b.second).takeUnless { it == 0 } ?: a.first.compareTo(b.first) },
         node to 0.0
     )
     while (toVisit.isNotEmpty()) {
