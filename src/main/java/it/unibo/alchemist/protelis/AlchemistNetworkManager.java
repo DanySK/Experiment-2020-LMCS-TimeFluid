@@ -143,7 +143,7 @@ public final class AlchemistNetworkManager implements NetworkManager, Serializab
 
     @Override
     public void shareState(final Map<CodePath, Object> toSend) {
-        toBeSent = toSend;
+        toBeSent = Objects.requireNonNull(toSend);
     }
 
     /**
@@ -154,7 +154,6 @@ public final class AlchemistNetworkManager implements NetworkManager, Serializab
      *            should get dropped).
      */
     public void simulateMessageArrival(final double currentTime) {
-        assert toBeSent != null;
         Objects.requireNonNull(toBeSent);
         if (!toBeSent.isEmpty()) {
             final MessageInfo msg = new MessageInfo(currentTime, node, toBeSent);
@@ -180,9 +179,9 @@ public final class AlchemistNetworkManager implements NetworkManager, Serializab
         private final Map<CodePath, Object> payload;
         private final DeviceUID source;
         private MessageInfo(final double time, final DeviceUID source, final Map<CodePath, Object> payload) {
-            this.time = time;
-            this.payload = payload;
-            this.source = source;
+            this.time = Objects.requireNonNull(time);
+            this.payload = Objects.requireNonNull(payload);
+            this.source = Objects.requireNonNull(source);
         }
         @Override
         public String toString() {
