@@ -1,5 +1,6 @@
 @file:JvmName("DistanceOracle")
 
+import it.unibo.alchemist.model.implementations.actions.RunProtelisProgram
 import it.unibo.alchemist.model.implementations.molecules.SimpleMolecule
 import it.unibo.alchemist.model.implementations.nodes.ProtelisNode
 import it.unibo.alchemist.model.interfaces.Node
@@ -107,11 +108,26 @@ const val timeId = "oracle-last-time"
                 }
         }
     }
-    val oracleVariableName = "oracle-$source"
+    val oracleVariableName = "oracle-$sourceName"
     nodes.asSequence()
         .filterIsInstance<ProtelisNode<*>>()
         .forEach {
             it.put(oracleVariableName, it.shortestDistanceSoFar())
             it.put(timeId, now)
         }
+}
+
+val oracleBetween = SimpleMolecule("oracle-between")
+
+fun injectDistanceBetweenSources(context: AlchemistExecutionContext<*>) {
+    val source2 = SimpleMolecule("source2")
+    val nodes = context.environmentAccess.nodes
+    val node2 = nodes.find { it.contains(source2) } as? ProtelisNode<*> ?: throw IllegalStateException()
+    val node2context = node2.getReactions().asSequence()
+        .flatMap { it.actions }
+        .filterIsInstance<RunProtelisProgram<*>>()
+        .first()
+        .executionContext
+    val distanceBetween = distanceToSource(node2context)
+    nodes.forEach { it.setConcentration(oracleBetween, distanceBetween) }
 }

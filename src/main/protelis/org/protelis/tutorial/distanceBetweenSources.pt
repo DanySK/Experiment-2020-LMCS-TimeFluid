@@ -1,0 +1,3 @@
+module org:protelis:tutorial:distanceBetweenSources
+import protelis:coord:spreading
+distanceBetween(env.has("source"), env.has("source2"))

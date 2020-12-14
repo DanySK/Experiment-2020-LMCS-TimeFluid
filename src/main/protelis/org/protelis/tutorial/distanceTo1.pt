@@ -1,11 +1,10 @@
-module org:protelis:tutorial:distanceTo2
-import protelis:coord:spreading
+module org:protelis:tutorial:distanceTo1
 
 env.put("last-exec", self.getCurrentTime())
 env.put("rounds", optionally(env.get("rounds")).orElse(0) + 1)
 let maxGrad = POSITIVE_INFINITY
 share (d <- maxGrad) {
-	mux (env.has("source")) {
+	mux (env.has("source2")) {
 		0
 	} else {
 		foldMin(maxGrad, d + self.nbrRange())

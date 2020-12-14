@@ -1,0 +1,275 @@
+incarnation: protelis
+
+environment:
+  type: ImageEnvironment
+  parameters: ["square.png", 0.0213, -5.3, -5.3]
+
+network-model:
+  type: ConnectWithinDistance
+  parameters: [1]
+
+variables:
+  seed: &seed
+    min: 0
+    max: 9
+    step: 1
+    default: 0
+  speed: &speed
+    type: ArbitraryVariable
+    parameters: [3, [0, 0.1, 0.3, 1, 3]]
+  latencies:
+    formula: "[0.01, 0.03, 0.1, 0.3, 1]"
+  tolerances:
+    formula: "[0, 0.01, 0.03, 0.1, 0.3, 1, 3]"
+  controlParameters: &control
+    formula: "[[Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY]] + GroovyCollections.combinations(latencies, tolerances)"
+  algorithm:
+    type: ArbitraryVariable
+    parameters: [[.inf, .inf], *control]
+  classic_frequency: &classic_frequency
+    formula: if (network_mean_latency > 10 && tolerance > 10) 1 else 0
+  network_mean_latency: &network_mean_latency
+    formula: algorithm[0]
+  tolerance: &tolerance
+    formula: algorithm[1]
+
+seed:
+  scenario: *seed
+  simulation: *seed
+
+move: &move
+  - time-distribution: 10
+    type: Event
+    actions:
+      - type: LevyWalk
+        parameters: [*speed, 0.5, 1]
+
+gradient: &gradient
+  - time-distribution: *classic_frequency
+    program: |
+      module channelclassic
+      def valueOf(name) = optionally(env.get(name)).orElse(POSITIVE_INFINITY)
+      def gradient(source) = share (d <- POSITIVE_INFINITY) {
+          mux (env.has(source)) {
+              0
+          } else {
+              foldMin(POSITIVE_INFINITY, d + self.nbrRange())
+          }
+      }
+      env.put("last-exec-channel", self.getCurrentTime())
+      env.put("rounds-channel", optionally(env.get("rounds-channel")).orElse(0) + 1)
+      gradient("source") + gradient("source2") < 2
+  - program: send
+  - program: |
+      module oracleRunner
+      import DistanceOracle.*
+      injectDistanceEverywhere()
+      injectDistanceEverywhere("source2")
+      injectDistanceBetweenSources()
+      let oracle1 = env.get("oracle-source")
+      let oracle2 = env.get("oracle-source2")
+      let oracleBetween = env.get("oracle-between")
+      let oracleChannel = oracle1 + oracle2 < 2 + oracleBetween
+      env.put("oracle-channel", oracleChannel)
+      let local = optionally(env.get("channelclassic"))
+        .or(optionally(env.get("channel")))
+        .orElse(false)
+      let error = if (oracleChannel && local || !oracleChannel && !local) { 0 } else { 1 }
+      env.put("error", error)
+    time-distribution:
+      type: DiracComb
+      parameters: [5]
+  - time-distribution:
+      type: AnyRealDistribution
+      parameters: [WeibullDistribution, 1, *network_mean_latency]
+    type: ChemicalReaction
+#    conditions:
+#      - type: OnAnyNeighborhoodChange
+#        parameters: [1]
+    actions:
+      - type: TimeFluidProtelisProgram
+        parameters:
+          - gradient1:
+              program: org:protelis:tutorial:distanceTo1
+              reactsToNewInformation: false
+              reactsToSelfState: false
+            gradient2:
+              program: org:protelis:tutorial:distanceTo2
+              reactsToNewInformation: false
+              reactsToSelfState: false
+            distance_between:
+              program: org:protelis:tutorial:distanceBetweenSources
+            channel:
+              program: |
+                def valueOf(name) = optionally(env.get(name)).orElse(POSITIVE_INFINITY)
+                env.put("last-exec-channel", self.getCurrentTime())
+                env.put("rounds-channel", optionally(env.get("rounds")).orElse(0) + 1)
+                valueOf("org:protelis:tutorial:distanceTo1") + valueOf("org:protelis:tutorial:distanceTo2")
+                  < valueOf("org:protelis:tutorial:distanceBetweenSources") + 2
+              reactsToNewInformation: false
+              reactsToSelfState: false
+            neighbor_sensor:
+              program: |
+                let neighs = foldUnion([nbr(self.getDeviceUID())])
+                rep(x <- [[], []]) { [x.get(1), neighs] }.get(0) != neighs
+              reactsToNewInformation: false
+              reactsToSelfState: false
+            position_sensor:
+              program: |
+                let newPosition = self.getDevicePosition()
+                rep(state <- [newPosition, true]) {
+                  let oldPosition = state.get(0)
+                  if (oldPosition.distanceTo(newPosition) > optionally(env.get("distanceThreshold")).orElse(0)) {
+                    [newPosition, true]
+                  } else {
+                    [oldPosition, false]
+                  }
+                }.get(1)
+              reactsToNewInformation: false
+              reactsToSelfState: false
+            self_sensor1:
+              program: |
+                let gradient = optionally(env.get("org:protelis:tutorial:distanceTo1")).orElse(NaN)
+                let surrounding = foldUnion([nbr(gradient)])
+                env.put("surrounding", surrounding)
+                let previous = rep(x <- [[], []]) { [x.get(1), surrounding] }.get(0)
+                if (surrounding.size() != previous.size()) {
+                  true
+                } else {
+                  let differences = surrounding.zip(previous)
+                    .map { abs(it.get(0) - it.get(1)) }
+                  env.put("differences-grad", differences)
+                  let threshold = optionally(env.get("distanceThreshold")).orElse(0)
+                  !differences.filter { it > threshold }.isEmpty()
+                }
+              reactsToNewInformation: false
+              reactsToSelfState: false
+            self_sensor2:
+              program: |
+                let gradient = optionally(env.get("org:protelis:tutorial:distanceTo2")).orElse(NaN)
+                let surrounding = foldUnion([nbr(gradient)])
+                env.put("surrounding", surrounding)
+                let previous = rep(x <- [[], []]) { [x.get(1), surrounding] }.get(0)
+                if (surrounding.size() != previous.size()) {
+                  true
+                } else {
+                  let differences = surrounding.zip(previous)
+                    .map { abs(it.get(0) - it.get(1)) }
+                  env.put("differences-grad", differences)
+                  let threshold = optionally(env.get("distanceThreshold")).orElse(0)
+                  !differences.filter { it > threshold }.isEmpty()
+                }
+              reactsToNewInformation: false
+              reactsToSelfState: false
+            neighbor_sensor_to_gradient1:
+              from: neighbor_sensor
+              to: gradient1
+              program: env.get("neighbor_sensor")
+            position_sensor_to_gradient1:
+              from: position_sensor
+              to: gradient1
+              program: env.get("position_sensor")
+            self_arc1:
+              from: self_sensor1
+              to: gradient1
+              program: env.get("self_sensor1")
+            neighbor_sensor_to_gradient2:
+              from: neighbor_sensor
+              to: gradient2
+              program: env.get("neighbor_sensor")
+            position_sensor_to_gradient2:
+              from: position_sensor
+              to: gradient2
+              program: env.get("position_sensor")
+            self_arc2:
+              from: self_sensor2
+              to: gradient2
+              program: env.get("self_sensor2")
+            gradient1_to_distance_between:
+              from: gradient1
+              to: distance_between
+              program: |
+                let current = env.get("org:protelis:tutorial:distanceTo1")
+                let previous = rep(x <- [NaN, NaN]) { [x.get(1), current] }.get(0)
+                current != previous
+            gradient2_to_distance_between:
+              from: gradient2
+              to: distance_between
+              program: |
+                let current = env.get("org:protelis:tutorial:distanceTo2")
+                let previous = rep(x <- [NaN, NaN]) { [x.get(1), current] }.get(0)
+                current != previous
+            gradient1_to_channel:
+              from: gradient1
+              to: channel
+              program: |
+                let current = env.get("org:protelis:tutorial:distanceTo1")
+                let previous = rep(x <- [NaN, NaN]) { [x.get(1), current] }.get(0)
+                current != previous
+            gradient2_to_channel:
+              from: gradient2
+              to: channel
+              program: |
+                let current = env.get("org:protelis:tutorial:distanceTo2")
+                let previous = rep(x <- [NaN, NaN]) { [x.get(1), current] }.get(0)
+                current != previous
+            distance_between_to_channel:
+              from: distance_between
+              to: channel
+              program: "true"
+
+displacements:
+  - in:
+      type: Point
+      parameters: [14, 0]
+    contents:
+      - molecule: source2
+        concentration: true
+      - molecule: distanceThreshold
+        concentration: *tolerance
+    programs:
+      - *gradient
+  - in:
+      type: Point
+      parameters: [0, 0]
+    contents:
+      - molecule: source
+        concentration: true
+      - molecule: distanceThreshold
+        concentration: *tolerance
+    programs:
+      - *gradient
+      - *move
+  - in:
+      type: Grid
+      parameters: [-5.5, -5.5, 5, 5, 0.5, 0.5, 0.1, 0.1]
+    contents:
+      - molecule: distanceThreshold
+        concentration: *tolerance
+    programs:
+      - *gradient
+      - *move
+  - in:
+      type: Grid
+      parameters: [5, -5.5, 15, 5, 0.5, 0.5, 0.1, 0.1]
+    contents:
+      - molecule: distanceThreshold
+        concentration: *tolerance
+    programs:
+      - *gradient
+
+export:
+  - time
+  - molecule: error
+    value-filter: onlyfinite
+    aggregators: [mean]
+  - molecule: coverage
+    value-filter: onlyfinite
+    aggregators: [mean]
+  - molecule: rounds-channel
+    value-filter: onlyfinite
+    aggregators: [sum, mean, max, min, StandardDeviation, GeometricMean]
+
+terminate:
+  - type: AfterTime
+    parameters: [100]
