@@ -1,4 +1,4 @@
-module org:protelis:tutorial:distanceTo
+module org:protelis:tutorial:distanceTo2
 import DistanceOracle.*
 
 env.put("last-exec", self.getCurrentTime())
