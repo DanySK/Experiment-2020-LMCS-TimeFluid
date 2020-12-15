@@ -1,6 +1,6 @@
 import numpy as np
 import xarray as xr
-import re
+import regex as re
 from pathlib import Path
 import collections
 
@@ -87,21 +87,38 @@ def extractCoordinates(filename):
 
     """
     with open(filename, 'r') as file:
-#        regex = re.compile(' (?P<varName>[a-zA-Z._-]+) = (?P<varValue>[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?),?')
-        regex = r"(?P<varName>[a-zA-Z._-]+) = (?P<varValue>[^,]*),?"
+        # r"(?P<varName>[a-zA-Z._-]+) = (?P<varValue>[^,]*),?"
+        regex = r"(?P<varName>[a-zA-Z._-]+) = (?P<varValue>(?:[^\[\(\{][^,]*)|(?<brackets>\[(?>[^\[\]]|(?P>brackets))*\])),?"
         dataBegin = r"\d"
-        is_float = r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?"
         for line in file:
             match = re.findall(regex, line)
             if match:
-                return {
-                    var : float(value) if re.match(is_float, value)
-                        else bool(re.match(r".*?true.*?", value.lower())) if re.match(r".*?(true|false).*?", value.lower())
-                        else value
-                    for var, value in match
-                }
+                plain_variables = {var : string_to_python(value) for var, value, _ in match }
+                refined_result = {}
+                for name, value in plain_variables.items():
+                    if type(value) is list or type(value) is tuple:
+                        for index, val in enumerate(value):
+                            refined_result[f"{name}_{index}"] = val
+                    else:
+                        refined_result[name] = value
+                return refined_result
             elif re.match(dataBegin, line[0]):
                 return {}
+
+def string_to_python(value):
+    if (value == 'Infinity'):
+        return float('inf')
+    if (value == '-Infinity'):
+        return -float('inf')
+    is_float = r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?"
+    if re.match(is_float, value):
+        return float(value)
+    if re.match(r".*?(true|false).*?", value.lower()):
+        return bool(re.match(r".*?true.*?", value.lower()))
+    matches = re.findall(r'\[(.+)\]', value)
+    if matches:
+        return [string_to_python(element) for element in re.findall('([^\s,]+)', matches[0])]
+    return value
 
 def extractVariableNames(filename):
     """
@@ -184,13 +201,13 @@ if __name__ == '__main__':
     # How to name the summary of the processed data
     pickleOutput = 'data_summary'
     # Experiment prefixes: one per experiment (root of the file name)
-    experiments = ['simulation']
+    experiments = ['gradient', 'moving', 'channel']
     floatPrecision = '{: 0.3f}'
     # Number of time samples 
-    timeSamples = 100
+    timeSamples = 500
     # time management
     minTime = 0
-    maxTime = 50
+    maxTime = None
     timeColumnName = 'time'
     logarithmicTime = False
     # One or more variables are considered random and "flattened"
@@ -230,12 +247,17 @@ if __name__ == '__main__':
         return r'\|' + x + r'\|'
 
     labels = {
-        'nodeCount': Measure(r'$n$', 'nodes'),
-        'harmonicCentrality[Mean]': Measure(f'${expected("H(x)")}$'),
-        'meanNeighbors': Measure(f'${expected(cardinality("N"))}$', 'nodes'),
+        'coverage[Mean]': Measure('coverage'),
+        'algorithm_0': Measure('network latencies', 'ms'),
+        'algorithm_1': Measure('tolerance', 'm'),
         'speed': Measure(r'$\|\vec{v}\|$', r'$m/s$'),
-        'msqer@harmonicCentrality[Max]': Measure(r'$\max{(' + mse(centrality_label) + ')}$'),
-        'msqer@harmonicCentrality[Min]': Measure(r'$\min{(' + mse(centrality_label) + ')}$'),
+        'error[Mean]': Measure(r'$\mathbb{E}($error$)$', 'm'),
+        'rounds[GeometricMean]': Measure(r'$\mathbb{\Pi}($rounds$)$'),
+        'rounds[Max]': Measure(r'$\max$(rounds)'),
+        'rounds[Min]': Measure(r'$\min$(rounds)'),
+        'rounds[Mean]': Measure(r'$\mathbb{E}($rounds$)$'),
+        'rounds[StandardDeviation]': Measure(r'$\sigma($rounds$)$'),
+        'rounds[Sum]': Measure(r'$\sum$(rounds)'),
         'msqer@harmonicCentrality[Mean]': Measure(f'${expected(mse(centrality_label))}$'),
         'msqer@harmonicCentrality[StandardDeviation]': Measure(f'${stdev_of(mse(centrality_label))}$'),
         'org:protelis:armonicCentralityHLL[Mean]': Measure(f'${expected(centrality_label)}$'),
@@ -274,7 +296,7 @@ if __name__ == '__main__':
             for experiment in experiments:
                 # Collect all files for the experiment of interest
                 import fnmatch
-                allfiles = filter(lambda file: fnmatch.fnmatch(file, experiment + '_*.txt'), os.listdir(directory))
+                allfiles = filter(lambda file: fnmatch.fnmatch(file, experiment + '_*'), os.listdir(directory))
                 allfiles = [directory + '/' + name for name in allfiles]
                 allfiles.sort()
                 # From the file name, extract the independent variables
