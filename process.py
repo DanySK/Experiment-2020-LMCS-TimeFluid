@@ -192,6 +192,13 @@ def beautifyValue(v):
     except:
         return v
 
+def sanitize_file_name(figname):
+    for string in ['frac', 'mathbb']:
+        figname = figname.replace(string, '')
+    for symbol in r".[]\/@:{}^$ ^_(),;":
+        figname = figname.replace(symbol, '')
+    return figname
+
 if __name__ == '__main__':
     # CONFIGURE SCRIPT
     # Where to find Alchemist data files
@@ -248,16 +255,18 @@ if __name__ == '__main__':
 
     labels = {
         'coverage[Mean]': Measure('coverage'),
-        'algorithm_0': Measure('network latencies', 'ms'),
-        'algorithm_1': Measure('tolerance', 'm'),
+        'algorithm_0': Measure(r'$\frac{1}{\lambda}$', 'ms'),
+        'algorithm_1': Measure(r'$\epsilon$', 'm'),
         'speed': Measure(r'$\|\vec{v}\|$', r'$m/s$'),
-        'error[Mean]': Measure(r'$\mathbb{E}($error$)$', 'm'),
-        'rounds[GeometricMean]': Measure(r'$\mathbb{\Pi}($rounds$)$'),
-        'rounds[Max]': Measure(r'$\max$(rounds)'),
-        'rounds[Min]': Measure(r'$\min$(rounds)'),
-        'rounds[Mean]': Measure(r'$\mathbb{E}($rounds$)$'),
-        'rounds[StandardDeviation]': Measure(r'$\sigma($rounds$)$'),
-        'rounds[Sum]': Measure(r'$\sum$(rounds)'),
+        'error[Mean]': Measure(r'$\mathbb{E}(\delta)$', 'm'),
+        'rounds[GeometricMean]': Measure(r'$\mathbb{\Pi}(\rho)$', 'rounds'),
+        'rounds[Max]': Measure(r'$\max$($\rho$)', 'rounds'),
+        'rounds[Min]': Measure(r'$\min$(rounds)', 'rounds'),
+        'rounds[Mean]': Measure(r'$\mathbb{E}(\rho)$', 'rounds'),
+        'rounds-channel[Mean]': Measure(r'$\mathbb{E}(\rho)$', 'rounds'),
+        'rounds[StandardDeviation]': Measure(r'$\sigma(\rho)$', 'rounds'),
+        'rounds-channel[StandardDeviation]': Measure(r'$\sigma(\rho)$', 'rounds'),
+        'rounds[Sum]': Measure(r'$\sum$(rounds)', 'rounds'),
         'msqer@harmonicCentrality[Mean]': Measure(f'${expected(mse(centrality_label))}$'),
         'msqer@harmonicCentrality[StandardDeviation]': Measure(f'${stdev_of(mse(centrality_label))}$'),
         'org:protelis:armonicCentralityHLL[Mean]': Measure(f'${expected(centrality_label)}$'),
@@ -368,7 +377,7 @@ if __name__ == '__main__':
     import matplotlib.cm as cmx
     matplotlib.rcParams.update({'axes.titlesize': 12})
     matplotlib.rcParams.update({'axes.labelsize': 10})
-    def make_line_chart(xdata, ydata, title = None, ylabel = None, xlabel = None, colors = None, linewidth = 1, errlinewidth = 0.5, figure_size = (6, 4)):
+    def make_line_chart(xdata, ydata, title = None, ylabel = None, xlabel = None, colors = None, linewidth = 1, errlinewidth = 0.5, figure_size = (8, 4.5)):
         fig = plt.figure(figsize = figure_size)
         ax = fig.add_subplot(1, 1, 1)
         ax.set_title(title)
@@ -428,4 +437,81 @@ if __name__ == '__main__':
         current_experiment_errors = stdevs[experiment]
         generate_all_charts(current_experiment_means, current_experiment_errors, basedir = f'{experiment}/all')
         
-# Custom charting
+    # Custom charting
+
+    import math
+    import itertools
+    import matplotlib.cm as cmx
+    selected_algorithms = {
+        r'$\frac{1}{\lambda}\,' + str(beautifyValue(latency)) +r'$,$\delta\,' + str(beautifyValue(tolerance)) + r'$': (latency, tolerance)
+        for latency, tolerance in itertools.product([0.1, 1], [0.01, 1])
+    }
+    selected_algorithms['classic'] = (math.inf, math.inf)
+    for experiment in experiments:
+        round_var_name = 'rounds' + ('-channel' if experiment == 'channel' else '')
+        final_time = 300 if experiment == 'gradient' else 100
+        for speed in means[experiment]['speed']:
+            speed_label = beautifyValue(speed)
+            data_at_this_speed = means[experiment].sel(speed = speed)
+            data_at_this_speed = data_at_this_speed.where(data_at_this_speed.time <= final_time)
+            # First chart set: y={error, round count, error/roundcount}, x=time, selected set of algos
+            metrics = [ (label_for(name + '[Mean]'), data_at_this_speed[name + '[Mean]']) for name in ['error', round_var_name] ]
+            metrics.append((r'$\frac{\int_{0}^{t} \delta \, dt}{\mathbb{E}(\rho)}$ ($\frac{m}{round}$)', metrics[0][1].cumsum() / metrics[1][1]))
+            for y_label, plot_data in metrics:
+                fig, ax = make_line_chart(
+                    xdata = data_at_this_speed['time'],
+                    ydata = {
+                        label : (plot_data.sel(algorithm_0 = latency, algorithm_1 = tolerance), 0)
+                        for label, (latency, tolerance) in selected_algorithms.items()
+                    },
+                    ylabel = y_label,
+                    xlabel = 'time (s)',
+                    linewidth = 3,
+                    colors = cmx.viridis_r,
+                    title = f"{experiment} scenario: {y_label} with time when {label_for('speed')}={speed_label}"
+                )
+                ax.set_xlim(0, final_time)
+                if speed == 0:
+                    ax.legend(ncol=3)
+                ax.set_ylim(0, None)
+                if 'rho' in y_label:
+                    ax.set_yscale('symlog')
+                fig.tight_layout()
+                figname = sanitize_file_name(f"comparison-{y_label}-{experiment}-speed{speed_label}")
+                fig.savefig(f"charts/{figname}.pdf")
+                plt.close(fig)
+            # Second chart set: y={mean error overall, mean rounds overall, mean stdev of rounds}, x=tolerance, latencies}
+        summary = means[experiment].mean(dim = ['time', 'speed'], skipna = True)
+        for metric in ['error[Mean]', f'{round_var_name}[Mean]', f'{round_var_name}[StandardDeviation]']:
+            fig = plt.figure(figsize = (8, 4.5))
+            ax = fig.add_subplot(1, 1, 1)
+            tolerances = list(filter(math.isfinite, list(summary['algorithm_1'])))
+            tolerance_label_names = list(map(lambda x: f"{label_for('algorithm_1')}={beautifyValue(x)}", tolerances))
+            latencies = list(filter(math.isfinite, list(summary['algorithm_0'])))
+            latency_label_names = list(map(lambda x: f"{label_for('algorithm_0')}={beautifyValue(x)}", latencies))
+            aggregate_width = 0.8
+            width = aggregate_width / len(latencies)
+            spacing = np.arange(len(tolerances))
+            for index, latency in enumerate(latencies):
+                plot_data = [float(summary.sel(algorithm_1 = tolerance, algorithm_0 = latency)[metric]) for tolerance in tolerances]
+                ax.bar(
+                    align = 'edge',
+                    x = spacing - aggregate_width / 2 + aggregate_width * index / len(latencies),
+                    height = plot_data,
+                    width = width,
+                    label = latency_label_names[index],
+                    edgecolor = 'black',
+                    linewidth = 0.1,
+                    color = cmx.viridis(index / (len(latencies) - 1))
+                )
+            metric_label = label_for(metric)
+            tolerance_label = label_for('algorithm_1')
+            title = f"{experiment} scenario: {metric_label} with {tolerance_label}"
+            ax.set_title(title)
+            ax.set_ylabel(unit_for(metric))
+            ax.set_xticks(spacing)
+            ax.set_xticklabels(tolerance_label_names)
+            ax.legend(ncol = len(latencies))
+            fig.tight_layout()
+            fig.savefig(f'charts/bar-{sanitize_file_name(title)}.pdf')
+            plt.close(fig)
