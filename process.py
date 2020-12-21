@@ -472,7 +472,7 @@ if __name__ == '__main__':
                     xlabel = 'time (s)',
                     linewidth = 3,
                     colors = cmx.viridis_r,
-                    title = f"{experiment} scenario: {y_label} with time when {label_for('speed')}={speed_label}"
+                    title = f"{experiment} scenario: {y_label} when {label_for('speed')}={speed_label}"
                 )
                 ax.set_xlim(0, final_time)
                 if speed == 0:
