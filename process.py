@@ -255,7 +255,7 @@ if __name__ == '__main__':
 
     labels = {
         'coverage[Mean]': Measure('coverage'),
-        'algorithm_0': Measure(r'$\frac{1}{\lambda}$', 'ms'),
+        'algorithm_0': Measure(r'$\lambda^{-1}$', 'ms'),
         'algorithm_1': Measure(r'$\epsilon$', 'm'),
         'speed': Measure(r'$\|\vec{v}\|$', r'$m/s$'),
         'error[Mean]': Measure(r'$\mathbb{E}(\delta)$', 'm'),
@@ -381,7 +381,7 @@ if __name__ == '__main__':
     import matplotlib.cm as cmx
     matplotlib.rcParams.update({'axes.titlesize': 12})
     matplotlib.rcParams.update({'axes.labelsize': 10})
-    def make_line_chart(xdata, ydata, title = None, ylabel = None, xlabel = None, colors = None, linewidth = 1, errlinewidth = 0.5, figure_size = (8, 4.5)):
+    def make_line_chart(xdata, ydata, title = None, ylabel = None, xlabel = None, colors = None, linewidth = 1, errlinewidth = 0.5, figure_size = (6, 4)):
         fig = plt.figure(figsize = figure_size)
         ax = fig.add_subplot(1, 1, 1)
         ax.set_title(title)
@@ -447,7 +447,7 @@ if __name__ == '__main__':
     import itertools
     import matplotlib.cm as cmx
     selected_algorithms = {
-        r'$\frac{1}{\lambda}\,' + str(beautifyValue(latency)) +r'$,$\delta\,' + str(beautifyValue(tolerance)) + r'$': (latency, tolerance)
+        r'$\lambda^{-1}\,' + str(beautifyValue(latency)) +r'$,$\delta\,' + str(beautifyValue(tolerance)) + r'$': (latency, tolerance)
         for latency, tolerance in itertools.product([0.1, 1], [0.01, 1])
     }
     selected_algorithms['classic'] = (math.inf, math.inf)
@@ -489,7 +489,7 @@ if __name__ == '__main__':
             # Second chart set: y={mean error overall, mean rounds overall, mean stdev of rounds}, x=tolerance, latencies}
         summary = means[experiment].mean(dim = ['time', 'speed'], skipna = True)
         for metric in ['error[Mean]', f'{round_var_name}[Mean]', f'{round_var_name}[StandardDeviation]']:
-            fig = plt.figure(figsize = (8, 4.5))
+            fig = plt.figure(figsize = (7, 5))
             ax = fig.add_subplot(1, 1, 1)
             tolerances = list(filter(math.isfinite, list(summary['algorithm_1'])))
             tolerance_label_names = list(map(lambda x: f"{label_for('algorithm_1')}={beautifyValue(x)}", tolerances))
@@ -517,7 +517,7 @@ if __name__ == '__main__':
             ax.set_ylabel(unit_for(metric))
             ax.set_xticks(spacing)
             ax.set_xticklabels(tolerance_label_names)
-            ax.legend(ncol = len(latencies))
+            ax.legend(ncol = len(latencies), bbox_to_anchor=(1, -0.1))
             fig.tight_layout()
             fig.savefig(f'charts/bar-{sanitize_file_name(title)}.pdf')
             plt.close(fig)
