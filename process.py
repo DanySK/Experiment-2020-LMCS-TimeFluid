@@ -193,7 +193,7 @@ def beautifyValue(v):
         return v
 
 def sanitize_file_name(figname):
-    for string in ['frac', 'mathbb']:
+    for string in ['frac', 'mathbb', 'cdot']:
         figname = figname.replace(string, '')
     for symbol in r".[]\/@:{}^$ ^_(),;":
         figname = figname.replace(symbol, '')
@@ -372,6 +372,10 @@ if __name__ == '__main__':
 
     # QUICK CHARTING
 
+    try:
+        os.makedirs('charts')
+    except FileExistsError:
+        pass
     import matplotlib
     import matplotlib.pyplot as plt
     import matplotlib.cm as cmx
@@ -435,7 +439,7 @@ if __name__ == '__main__':
     for experiment in experiments:
         current_experiment_means = means[experiment]
         current_experiment_errors = stdevs[experiment]
-        generate_all_charts(current_experiment_means, current_experiment_errors, basedir = f'{experiment}/all')
+#        generate_all_charts(current_experiment_means, current_experiment_errors, basedir = f'{experiment}/all')
         
     # Custom charting
 
@@ -456,7 +460,7 @@ if __name__ == '__main__':
             data_at_this_speed = data_at_this_speed.where(data_at_this_speed.time <= final_time)
             # First chart set: y={error, round count, error/roundcount}, x=time, selected set of algos
             metrics = [ (label_for(name + '[Mean]'), data_at_this_speed[name + '[Mean]']) for name in ['error', round_var_name] ]
-            metrics.append((r'$\frac{\int_{0}^{t} \delta \, dt}{\mathbb{E}(\rho)}$ ($\frac{m}{round}$)', metrics[0][1].cumsum() / metrics[1][1]))
+            metrics.append((r'$\int_{0}^{t} \delta \, dt \cdot \mathbb{E}(\rho)$ ($m \cdot round$)', metrics[0][1].cumsum() * metrics[1][1]))
             for y_label, plot_data in metrics:
                 fig, ax = make_line_chart(
                     xdata = data_at_this_speed['time'],
@@ -473,9 +477,11 @@ if __name__ == '__main__':
                 ax.set_xlim(0, final_time)
                 if speed == 0:
                     ax.legend(ncol=3)
-                ax.set_ylim(0, None)
                 if 'rho' in y_label:
-                    ax.set_yscale('symlog')
+                    ax.set_yscale('linear')
+                    ax.legend(ncol = 2)
+                else:
+                    ax.set_ylim(0, None)
                 fig.tight_layout()
                 figname = sanitize_file_name(f"comparison-{y_label}-{experiment}-speed{speed_label}")
                 fig.savefig(f"charts/{figname}.pdf")
