@@ -381,7 +381,7 @@ if __name__ == '__main__':
     import matplotlib.cm as cmx
     matplotlib.rcParams.update({'axes.titlesize': 12})
     matplotlib.rcParams.update({'axes.labelsize': 10})
-    def make_line_chart(xdata, ydata, title = None, ylabel = None, xlabel = None, colors = None, linewidth = 1, errlinewidth = 0.5, figure_size = (6, 4)):
+    def make_line_chart(xdata, ydata, title = None, ylabel = None, xlabel = None, colors = None, linewidth = 1, errlinewidth = 0.5, figure_size = (7, 4)):
         fig = plt.figure(figsize = figure_size)
         ax = fig.add_subplot(1, 1, 1)
         ax.set_title(title)
@@ -447,7 +447,7 @@ if __name__ == '__main__':
     import itertools
     import matplotlib.cm as cmx
     selected_algorithms = {
-        r'$\lambda^{-1}\,' + str(beautifyValue(latency)) +r'$,$\delta\,' + str(beautifyValue(tolerance)) + r'$': (latency, tolerance)
+        r'$\lambda^{-1}=' + str(beautifyValue(latency)) +r',\,\epsilon = ' + str(beautifyValue(tolerance)) + r'$': (latency, tolerance)
         for latency, tolerance in itertools.product([0.1, 1], [0.01, 1])
     }
     selected_algorithms['classic'] = (math.inf, math.inf)
@@ -472,7 +472,7 @@ if __name__ == '__main__':
                     xlabel = 'time (s)',
                     linewidth = 3,
                     colors = cmx.viridis_r,
-                    title = f"{experiment} scenario: {y_label} with time when {label_for('speed')}={speed_label}"
+                    title = f"{experiment} scenario: {y_label} when {label_for('speed')}={speed_label}"
                 )
                 ax.set_xlim(0, final_time)
                 if speed == 0:

@@ -25,7 +25,7 @@ variables:
     formula: "[[Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY]] + GroovyCollections.combinations(latencies, tolerances)"
   algorithm:
     type: ArbitraryVariable
-    parameters: [[.inf, .inf], *control]
+    parameters: [[0.03, 0.1], *control]
   classic_frequency: &classic_frequency
     formula: if (network_mean_latency > 10 && tolerance > 10) 1 else 0
   network_mean_latency: &network_mean_latency
