@@ -1,7 +1,7 @@
 #####################################################################
 # Alchemist log file - simulation started at: 2020-12-22T15:42+0000 #
 #####################################################################
-# seed = 2.0, speed = 1, algorithm = [Infinity, Infinity]
+# seed = 8.0, speed = 1, algorithm = [Infinity, Infinity]
 #
 # The columns have the following meaning: 
 # time error[Mean] coverage[Mean] rounds-channel[Sum] rounds-channel[Mean] rounds-channel[Max] rounds-channel[Min] rounds-channel[StandardDeviation] rounds-channel[GeometricMean] 
