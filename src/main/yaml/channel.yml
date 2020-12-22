@@ -16,7 +16,7 @@ variables:
     default: 0
   speed: &speed
     type: ArbitraryVariable
-    parameters: [3, [0, 0.1, 0.3, 1, 3]]
+    parameters: [0, [0, 0.1, 0.3, 1, 3]]
   latencies:
     formula: "[0.01, 0.03, 0.1, 0.3, 1]"
   tolerances:
@@ -25,7 +25,7 @@ variables:
     formula: "[[Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY]] + GroovyCollections.combinations(latencies, tolerances)"
   algorithm:
     type: ArbitraryVariable
-    parameters: [[0.03, 0.1], *control]
+    parameters: [[.inf, .inf], *control]
   classic_frequency: &classic_frequency
     formula: if (network_mean_latency > 10 && tolerance > 10) 1 else 0
   network_mean_latency: &network_mean_latency
@@ -48,6 +48,7 @@ gradient: &gradient
   - time-distribution: *classic_frequency
     program: |
       module channelclassic
+      import protelis:coord:spreading
       def valueOf(name) = optionally(env.get(name)).orElse(POSITIVE_INFINITY)
       def gradient(source) = share (d <- POSITIVE_INFINITY) {
           mux (env.has(source)) {
@@ -58,7 +59,7 @@ gradient: &gradient
       }
       env.put("last-exec-channel", self.getCurrentTime())
       env.put("rounds-channel", optionally(env.get("rounds-channel")).orElse(0) + 1)
-      gradient("source") + gradient("source2") < 2
+      gradient("source") + gradient("source2") < 2 + distanceBetween(env.has("source"), env.has("source2"))
   - program: send
   - program: |
       module oracleRunner
