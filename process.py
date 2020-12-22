@@ -447,7 +447,7 @@ if __name__ == '__main__':
     import itertools
     import matplotlib.cm as cmx
     selected_algorithms = {
-        r'$\lambda^{-1}\,' + str(beautifyValue(latency)) +r'$,$\delta\,' + str(beautifyValue(tolerance)) + r'$': (latency, tolerance)
+        r'$\lambda^{-1}=' + str(beautifyValue(latency)) +r',\,\epsilon = ' + str(beautifyValue(tolerance)) + r'$': (latency, tolerance)
         for latency, tolerance in itertools.product([0.1, 1], [0.01, 1])
     }
     selected_algorithms['classic'] = (math.inf, math.inf)
