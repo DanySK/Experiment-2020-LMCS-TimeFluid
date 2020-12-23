@@ -8,6 +8,13 @@ Submitted to
 
 > [Logical Methods in Computer Science](https://lmcs.episciences.org/)
 
+## Sanity Check and current status
+
+[![DOI](https://zenodo.org/badge/315973644.svg)](https://zenodo.org/badge/latestdoi/315973644)
+![](https://github.com/DanySK/Experiment-2020-LMCS-TimeFluid/workflows/CI/badge.svg)
+![](https://github.com/DanySK/Experiment-2020-LMCS-TimeFluid/workflows/Docker/badge.svg)
+![](https://github.com/DanySK/Experiment-2020-LMCS-TimeFluid/workflows/Generate%20and%20deploy%20charts/badge.svg)
+
 ## Organization
 
 ## How to reproduce
