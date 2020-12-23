@@ -1,0 +1,16 @@
+.git
+.github
+.gradle
+.idea
+.settings
+build
+charts
+data
+
+.gitignore
+data_*
+Dockerfile
+gradle.properties
+kubernetes*
+sample*
+timeprocessed
