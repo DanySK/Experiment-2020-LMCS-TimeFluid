@@ -16,6 +16,6 @@ spec:
           name: github-packages-danysk-readonly
           key: token
     command: [ "/bin/sh" ]
-    args: ["-c", "./gradlew runAllBatch && ./autogit; sleep 30d" ]
+    args: ["-c", "./gradlew runAllBatch && python3 process.py; sleep 30d" ]
   imagePullSecrets:
   - name: github-registry-danysk-readonly
