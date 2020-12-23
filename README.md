@@ -1,4 +1,4 @@
-# Experiments of `Time-Fluid Field-Based Coordination Through Programmable Distributed Schedulers`, submitted to [`Logical Methods in Computer Science`](https://lmcs.episciences.org/)
+# Time-Fluid Field-Based Coordination Through Programmable Distributed Schedulers
 
 This repository contains code and instruction to reproduce the experiments presented in the paper
 
