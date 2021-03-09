@@ -29,7 +29,7 @@ variables:
   tolerance: &tolerance
     formula: algorithm[1]
 
-seed:
+seeds:
   scenario: *seed
   simulation: *seed
 
