@@ -7,7 +7,7 @@ network-model:
 variables:
   seed: &seed
     min: 0
-    max: 9
+    max: 49
     step: 1
     default: 0
   speed: &speed
