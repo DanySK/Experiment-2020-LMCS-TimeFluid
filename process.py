@@ -199,6 +199,12 @@ def sanitize_file_name(figname):
         figname = figname.replace(symbol, '')
     return figname
 
+def crop(filename):
+    from shutil import which
+    if which('pdfcrop') is not None:
+        import os
+        os.system(f'pdfcrop {filename}')
+
 if __name__ == '__main__':
     # CONFIGURE SCRIPT
     # Where to find Alchemist data files
@@ -460,7 +466,7 @@ if __name__ == '__main__':
             data_at_this_speed = data_at_this_speed.where(data_at_this_speed.time <= final_time)
             # First chart set: y={error, round count, error/roundcount}, x=time, selected set of algos
             metrics = [ (label_for(name + '[Mean]'), data_at_this_speed[name + '[Mean]']) for name in ['error', round_var_name] ]
-            metrics.append((r'$\int_{0}^{t} \delta \, dt \cdot \mathbb{E}(\rho)$ ($m \cdot round$)', metrics[0][1].cumsum() * metrics[1][1]))
+            metrics.append((r'$\int_{0}^{t} \mathbb{E}(\delta) \, dt \cdot \mathbb{E}(\rho)$ ($m \cdot round$)', metrics[0][1].cumsum() * metrics[1][1]))
             for y_label, plot_data in metrics:
                 fig, ax = make_line_chart(
                     xdata = data_at_this_speed['time'],
@@ -470,9 +476,10 @@ if __name__ == '__main__':
                     },
                     ylabel = y_label,
                     xlabel = 'time (s)',
-                    linewidth = 3,
+                    linewidth = 2,
                     colors = cmx.viridis_r,
-                    title = f"{experiment} scenario: {y_label} when {label_for('speed')}={speed_label}"
+                    title = f"{experiment}: {y_label} when {label_for('speed')}={speed_label}",
+                    figure_size = (6, 4)
                 )
                 ax.set_xlim(0, final_time)
                 if speed == 0:
@@ -484,18 +491,20 @@ if __name__ == '__main__':
                     ax.set_ylim(0, None)
                 fig.tight_layout()
                 figname = sanitize_file_name(f"comparison-{y_label}-{experiment}-speed{speed_label}")
-                fig.savefig(f"charts/{figname}.pdf")
+                filename = f"charts/{figname}.pdf"
+                fig.savefig(filename)
                 plt.close(fig)
+                crop(filename)
             # Second chart set: y={mean error overall, mean rounds overall, mean stdev of rounds}, x=tolerance, latencies}
         summary = means[experiment].mean(dim = ['time', 'speed'], skipna = True)
         for metric in ['error[Mean]', f'{round_var_name}[Mean]', f'{round_var_name}[StandardDeviation]']:
-            fig = plt.figure(figsize = (7, 5))
+            fig = plt.figure(figsize = (5, 3.5))
             ax = fig.add_subplot(1, 1, 1)
             tolerances = list(filter(math.isfinite, list(summary['algorithm_1'])))
             tolerance_label_names = list(map(lambda x: f"{label_for('algorithm_1')}={beautifyValue(x)}", tolerances))
             latencies = list(filter(math.isfinite, list(summary['algorithm_0'])))
             latency_label_names = list(map(lambda x: f"{label_for('algorithm_0')}={beautifyValue(x)}", latencies))
-            aggregate_width = 0.8
+            aggregate_width = 0.95
             width = aggregate_width / len(latencies)
             spacing = np.arange(len(tolerances))
             for index, latency in enumerate(latencies):
@@ -517,7 +526,10 @@ if __name__ == '__main__':
             ax.set_ylabel(unit_for(metric))
             ax.set_xticks(spacing)
             ax.set_xticklabels(tolerance_label_names)
-            ax.legend(ncol = len(latencies), bbox_to_anchor=(1, -0.1))
+            rows = 2
+            ax.legend(ncol = int(math.ceil(len(latencies) / rows)), bbox_to_anchor=(0.85, -0.1), handletextpad=0.2, columnspacing=0.7)
             fig.tight_layout()
-            fig.savefig(f'charts/bar-{sanitize_file_name(title)}.pdf')
+            filename = f'charts/bar-{sanitize_file_name(title)}.pdf'
+            fig.savefig(filename)
             plt.close(fig)
+            crop(filename)
