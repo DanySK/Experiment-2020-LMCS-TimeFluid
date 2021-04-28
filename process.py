@@ -479,7 +479,7 @@ if __name__ == '__main__':
                     linewidth = 2,
                     colors = cmx.viridis_r,
                     title = f"{experiment}: {y_label} when {label_for('speed')}={speed_label}",
-                    figure_size = (6, 4)
+                    figure_size = (6, 3.5)
                 )
                 ax.set_xlim(0, final_time)
                 if speed == 0:
@@ -504,7 +504,7 @@ if __name__ == '__main__':
             tolerance_label_names = list(map(lambda x: f"{label_for('algorithm_1')}={beautifyValue(x)}", tolerances))
             latencies = list(filter(math.isfinite, list(summary['algorithm_0'])))
             latency_label_names = list(map(lambda x: f"{label_for('algorithm_0')}={beautifyValue(x)}", latencies))
-            aggregate_width = 0.95
+            aggregate_width = 0.9
             width = aggregate_width / len(latencies)
             spacing = np.arange(len(tolerances))
             for index, latency in enumerate(latencies):
