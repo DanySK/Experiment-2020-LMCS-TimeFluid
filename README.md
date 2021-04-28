@@ -206,7 +206,6 @@ The container is pre-configured for sleeping thirty days once it's finished.
 This leaves plenty of time to retrieve the run results via, e.g.:
 
 ``kubectl cp lmcs-2020-timefluid-experiments:/lmcs/data <destination_folder>``
-``kubectl cp lmcs-2020-timefluid-experiments:/lmcs/charts <destination_folder>``
 
 ## License
 
