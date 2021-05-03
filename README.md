@@ -207,6 +207,13 @@ This leaves plenty of time to retrieve the run results via, e.g.:
 
 ``kubectl cp lmcs-2020-timefluid-experiments:/lmcs/data <destination_folder>``
 
+Once results have been copied out of the running container,
+it can be shut down with:
+
+``kubectl delete pod lmcs-2020-timefluid-experiments``
+
+Please keep in mind that doing so will *destroy* the data on the cluster, so make sure that you exported it and saved in some other location.
+
 ## License
 
 Released under the terms of the GNU General Public License 3.0
