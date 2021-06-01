@@ -8,3 +8,4 @@ data_summary_*
 timeprocessed
 gradle.properties
 data/
+charts/
